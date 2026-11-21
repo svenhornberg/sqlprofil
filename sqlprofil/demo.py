@@ -5,7 +5,7 @@ DuckDB-Datei, es wird keine weitere Datenbank gebraucht.
 
     sqlprofil demo                 baut alle drei Demos unter demo/
     sqlprofil --demo shop html     arbeitet danach mit der Shop-Demo
-    SQLPROFIL_DEMO=vermietung adk web agents
+    SQLPROFIL_DEMO=rental adk web agents
 """
 from __future__ import annotations
 
@@ -380,8 +380,8 @@ STADTWERKE_OPS = [
 
 DEMOS: dict[str, tuple[str, Callable[[Any, random.Random], None], list[dict[str, Any]], list[str]]] = {
     "shop": ("Demo: Onlineshop", _shop, SHOP_OPS, ["kunde", "produkt", "bestellung", "bestellposition"]),
-    "vermietung": ("Demo: Baumaschinen-Vermietung", _vermietung, VERMIETUNG_OPS, ["geraet", "mietvertrag", "wartung"]),
-    "stadtwerke": ("Demo: Stadtwerke", _stadtwerke, STADTWERKE_OPS, ["zaehler", "vertrag", "ablesung"]),
+    "rental": ("Demo: Baumaschinen-Vermietung", _vermietung, VERMIETUNG_OPS, ["geraet", "mietvertrag", "wartung"]),
+    "utilities": ("Demo: Stadtwerke", _stadtwerke, STADTWERKE_OPS, ["zaehler", "vertrag", "ablesung"]),
 }
 
 

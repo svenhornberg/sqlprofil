@@ -73,13 +73,13 @@ def test_html_ganze_datenbank_ueber_cli(duck, capsys):
     con.execute("CREATE TABLE kunde (id INTEGER, land VARCHAR); INSERT INTO kunde VALUES (1,'DE'),(2,NULL)")
     con.execute("CREATE VIEW v_auftrag AS SELECT * FROM auftrag")
     con.close()
-    assert cli.main(["html", "--alle", "--titel", "Testdatenbank"]) == 0
+    assert cli.main(["html", "--all", "--title", "Testdatenbank"]) == 0
     out = duck / "reports" / "index.html"
     assert str(out) in capsys.readouterr().out
     text = out.read_text(encoding="utf-8")
     assert "<h1>Testdatenbank</h1>" in text and 'id="uebersicht"' in text
     assert 'href="#t-main-auftrag"' in text and 'href="#t-main-kunde"' in text
-    assert "v_auftrag" not in text  # Views nur mit --mit-views
+    assert "v_auftrag" not in text  # Views nur mit --with-views
     # Auswahl
     assert cli.main(["html", "kunde", "auftrag", "-o", str(duck / "auswahl.html")]) == 0
     assert (duck / "auswahl.html").read_text(encoding="utf-8").count("<section id=\"t-") == 2
@@ -89,14 +89,14 @@ def test_cli_patch_pruefen(duck, capsys, tmp_path):
     profiler.profile_table("auftrag")
     f = tmp_path / "p.yaml"
     f.write_text(patch.render(OPS), encoding="utf-8")
-    assert cli.main(["patch", str(f), "--pruefen"]) == 0
+    assert cli.main(["patch", str(f), "--dry-run"]) == 0
     assert "Nur geprueft" in capsys.readouterr().out
     assert store.load("auftrag")["owner"] == ""
     assert cli.main(["patch", str(f)]) == 0
     assert store.load("auftrag")["owner"] == "Vertrieb"
 
 
-@pytest.mark.parametrize("name", ["shop", "vermietung", "stadtwerke"])
+@pytest.mark.parametrize("name", ["shop", "rental", "utilities"])
 def test_demo(name, tmp_path, monkeypatch):
     from sqlprofil import demo
     monkeypatch.setenv("SQLPROFIL_DEMO_DIR", str(tmp_path))
@@ -114,3 +114,19 @@ def test_demo(name, tmp_path, monkeypatch):
     first = profiler.load_profile(demo.DEMOS[name][3][0])["spalten"]
     demo.build(name)
     assert profiler.load_profile(demo.DEMOS[name][3][0])["spalten"] == first
+
+
+def test_cli_englische_befehle(duck, capsys):
+    assert cli.main(["profile", "auftrag", "--sample", "100"]) == 0
+    store.add_rule("auftrag", "betrag >= 0", "keine negativen Betraege")
+    assert cli.main(["rule", "auftrag", "r1", "rejected", "--reason", "Gutschriften sind negativ"]) == 0
+    assert store.load("auftrag")["regeln"][0]["status"] == "abgelehnt"
+    assert cli.main(["rule", "auftrag", "r1", "accepted"]) == 0
+    assert cli.main(["check", "auftrag"]) == 0
+    assert "betrag >= 0" in capsys.readouterr().out
+    q, _ = store.add_question("auftrag", "Warum fehlt das Ende?")
+    assert cli.main(["answer", "auftrag", q["id"], "Laufende Auftraege.", "--by", "Fachbereich"]) == 0
+    assert cli.main(["report", "auftrag", "--no-llm"]) == 0
+    assert cli.main(["run", "auftrag", "--no-llm"]) == 0
+    assert cli.main(["tables"]) == 0
+    assert "main.auftrag" in capsys.readouterr().out

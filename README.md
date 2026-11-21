@@ -29,8 +29,8 @@ Branchen, jeweils mit absichtlich eingebauten Fehlern:
 | Demo | Tabellen |
 |---|---|
 | `shop` | Onlineshop: kunde, produkt, bestellung, bestellposition |
-| `vermietung` | Baumaschinen-Vermietung: geraet, mietvertrag, wartung |
-| `stadtwerke` | Stadtwerke: zaehler, vertrag, ablesung |
+| `rental` | Baumaschinen-Vermietung: geraet, mietvertrag, wartung |
+| `utilities` | Stadtwerke: zaehler, vertrag, ablesung |
 
 ```
 python -m venv .venv
@@ -43,8 +43,8 @@ Danach liegt unter `demo/<name>/reports/index.html` je ein fertiger Report. Alle
 arbeiten mit `--demo <name>` auf diesen Daten:
 
 ```
-sqlprofil --demo vermietung tabellen
-sqlprofil --demo vermietung pruefen mietvertrag
+sqlprofil --demo rental tables
+sqlprofil --demo rental check mietvertrag
 ```
 
 ## Eigene Datenbank
@@ -72,25 +72,26 @@ fast jede Datenquelle profilieren.
 ## Befehle
 
 ```
-sqlprofil tabellen                       Tabellen der Datenbank
-sqlprofil profil dbo.auftrag             Kennzahlen berechnen, Doku-Datei anlegen
-sqlprofil pruefen dbo.auftrag            akzeptierte Regeln ausführen
+sqlprofil tables                         Tabellen der Datenbank
+sqlprofil profile dbo.auftrag            Kennzahlen berechnen, Doku-Datei anlegen
+sqlprofil check dbo.auftrag              akzeptierte Regeln ausführen
 sqlprofil report dbo.auftrag             Markdown-Report, Modell schlägt Regeln und Fragen vor
-sqlprofil report dbo.auftrag --ohne-ki   nur Fakten
-sqlprofil alles dbo.auftrag              profil + pruefen + report
+sqlprofil report dbo.auftrag --no-llm    nur Fakten
+sqlprofil run dbo.auftrag                profile + check + report
 
 sqlprofil html dbo.auftrag               HTML-Report für eine Tabelle
 sqlprofil html dbo.auftrag dbo.kunde     für eine Auswahl
 sqlprofil html                           für alle Tabellen mit Doku-Datei
-sqlprofil html --alle                    für die ganze Datenbank (--mit-views, --stichprobe 10)
+sqlprofil html --all                     für die ganze Datenbank (--with-views, --sample 10, --refresh)
 
-sqlprofil regel dbo.auftrag r3 abgelehnt --grund "Gutschriften sind negativ"
-sqlprofil antwort dbo.auftrag f1 "Laufende Aufträge haben kein Ende." --von Fachbereich
-sqlprofil patch vorschlag.yaml --pruefen
+sqlprofil rule dbo.auftrag r3 rejected --reason "Gutschriften sind negativ"
+sqlprofil answer dbo.auftrag f1 "Laufende Aufträge haben kein Ende." --by Fachbereich
+sqlprofil patch vorschlag.yaml --dry-run
+sqlprofil demo                           Demo-Daten erzeugen
 ```
 
 Der HTML-Report ist eine einzelne Datei ohne externe Abhängigkeiten und lässt sich per Mail oder
-Dateifreigabe weitergeben. Bei großen Tabellen liest `--stichprobe 10` nur etwa zehn Prozent.
+Dateifreigabe weitergeben. Bei großen Tabellen liest `--sample 10` nur etwa zehn Prozent.
 
 ## Wo die Ergebnisse liegen
 
@@ -140,7 +141,7 @@ adk web agents
 
 Im Browser `sqlprofil_agent` wählen. Der Agent liest Profil und Dokumentation, erklärt Auffälligkeiten,
 zählt Verstöße gegen eine Regel und nimmt auf, was die Fachabteilung erklärt. Zum Ausprobieren ohne
-eigene Datenbank: `SQLPROFIL_DEMO=vermietung` setzen. Ein Modell braucht der Chat immer
+eigene Datenbank: `SQLPROFIL_DEMO=rental` setzen. Ein Modell braucht der Chat immer
 (`SQLPROFIL_MODEL`, zum Beispiel `azure/gpt-4.1` oder ein lokales `ollama_chat/...`).
 
 Es gibt zwei Betriebsarten (`SQLPROFIL_CHAT_MODE`):
@@ -173,7 +174,7 @@ in Klartext. Er übersteht Kopieren aus Chat und Mail:
 Einspielen:
 
 ```
-sqlprofil patch vorschlag.yaml --pruefen     zeigt, was passieren würde
+sqlprofil patch vorschlag.yaml --dry-run     zeigt, was passieren würde
 sqlprofil patch vorschlag.yaml               spielt ein
 git diff                                     im Datenverzeichnis: was sich an den Dateien geändert hat
 ```

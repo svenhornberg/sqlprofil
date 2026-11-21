@@ -187,7 +187,7 @@ class DuckDb(Dialect):
         return t.split("(")[0].strip()  # decimal(10,2) -> decimal
 
     def sample(self, percent: float | None) -> str:
-        return f" USING SAMPLE {float(percent):g} PERCENT (system)" if percent else ""
+        return f" TABLESAMPLE bernoulli({float(percent):g}%)" if percent else ""
 
     def connection_string(self, settings: Settings) -> str:
         return settings.dsn or ":memory:"

@@ -195,7 +195,7 @@ def report_path(table: str) -> Path:
 def write_report(table: str, use_model: bool = True) -> Path:
     profile = profiler.load_profile(table)
     if profile is None:
-        raise RuntimeError(f"Kein Profil fuer {table}. Erst: sqlprofil profil {table}")
+        raise RuntimeError(f"Kein Profil fuer {table}. Erst: sqlprofil profile {table}")
     checks = rules.load_results(table)
     assessment = ""
     if use_model:

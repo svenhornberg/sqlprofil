@@ -141,7 +141,7 @@ def apply_ops(ops: list[dict[str, Any]], dry_run: bool = False) -> list[str]:
 def render(ops: list[dict[str, Any]], von: str = "") -> str:
     checked = [validate(op) for op in ops]
     head = [HEADER, f"# Datum: {_dt.date.today().isoformat()}" + (f", von: {von}" if von else ""),
-            "# Einspielen: sqlprofil patch <datei>   (vorher pruefen: --pruefen)", "#",
+            "# Einspielen: sqlprofil patch <datei>   (vorher pruefen: --dry-run)", "#",
             "# Was sich aendert:"]
     head += [f"#  {i}. {describe(op)}" for i, op in enumerate(checked, 1)]
     body = yaml.safe_dump(checked, sort_keys=False, allow_unicode=True, width=100, default_flow_style=False)
