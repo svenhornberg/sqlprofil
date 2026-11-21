@@ -34,7 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-o", "--output", metavar="DATEI")
 
     p = sub.add_parser("patch", help="Aenderungsvorschlag aus dem Chat einspielen")
-    p.add_argument("datei", help="Datei mit dem Patch, oder - fuer Einfuegen ueber die Standardeingabe")
+    p.add_argument("datei", nargs="?", help="Datei mit dem Patch, oder - fuer Einfuegen ueber die Standardeingabe; "
+                                           "ohne Angabe: Patches im Eingang auflisten")
     p.add_argument("--dry-run", action="store_true", help="nur anzeigen, nichts aendern")
 
     p = sub.add_parser("profile", help="Kennzahlen einer Tabelle berechnen")
@@ -79,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(name + (" (View)" if is_view else ""))
         elif args.cmd == "html":
             return _html(args)
+        elif args.cmd == "patch" and not args.datei:
+            files = patch.list_inbox()
+            print("\n".join(str(f) for f in files) if files else f"Kein Patch im Eingang ({patch.inbox_dir()}).")
         elif args.cmd == "patch":
             text = sys.stdin.read() if args.datei == "-" else Path(args.datei).read_text(encoding="utf-8")
             lines = patch.apply_ops(patch.parse(text), dry_run=args.dry_run)

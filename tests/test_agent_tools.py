@@ -22,7 +22,13 @@ def test_patch_modus_schreibt_nichts(duck, monkeypatch):
     profiler.profile_table("auftrag")
     before = store.path_for("auftrag").read_text(encoding="utf-8")
     a = _agent(monkeypatch, "patch")
-    ctx = SimpleNamespace(state={})
+    saved = {}
+
+    async def save_artifact(filename, artifact):
+        saved[filename] = artifact.inline_data.data.decode("utf-8")
+        return 0
+
+    ctx = SimpleNamespace(state={}, save_artifact=save_artifact)
     names = {t.__name__ for t in a.root_agent.tools}
     assert "patch_ausgeben" in names and "sql_abfragen" not in names
 
@@ -37,8 +43,14 @@ def test_patch_modus_schreibt_nichts(duck, monkeypatch):
     assert len(a.tabelle_lesen("auftrag", ctx)["in_diesem_chat_vorgemerkt"]) == 4
     assert store.path_for("auftrag").read_text(encoding="utf-8") == before  # nichts gespeichert
 
-    out = a.patch_ausgeben(ctx, von="Fachbereich")
+    import asyncio
+    out = asyncio.run(a.patch_ausgeben(ctx, von="Fachbereich"))
     assert out["anzahl"] == 4
+    # Drei Wege: Text zum Kopieren, Datei zum Herunterladen, Kopie im Eingang
+    assert saved[out["download"]] == out["patch"] and out["download"].endswith(".yaml")
+    inbox = patch.list_inbox()
+    assert [f.name for f in inbox] == [out["im_eingang_abgelegt"]] and "fachbereich" in inbox[0].name
+    assert inbox[0].read_text(encoding="utf-8") == out["patch"]
     patch.apply_ops(patch.parse(out["patch"]))  # der kopierte Text laesst sich einspielen
     doc = store.load("auftrag")
     assert doc["regeln"][0]["status"] == "akzeptiert" and doc["spalten"]["status"]["bedeutung"] == "Bearbeitungsstand"

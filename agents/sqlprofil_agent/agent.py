@@ -11,6 +11,7 @@ Datenbank und nimmt das Wissen der Fachabteilung auf. Zwei Betriebsarten (SQLPRO
 """
 from __future__ import annotations
 
+import datetime as _dt
 import functools
 from typing import Any
 
@@ -188,18 +189,35 @@ def frage_beantworten(tabelle: str, frage: str, antwort: str, tool_context: Tool
                     "von": von}, tool_context)
 
 
-@_safe
-def patch_ausgeben(tool_context: ToolContext, von: str = "") -> dict[str, Any]:
-    """Gibt alle in diesem Chat vorgemerkten Aenderungen als lesbaren Patch zurueck.
-    Den Text unveraendert in einem Codeblock anzeigen, damit der Mensch ihn kopieren kann.
+async def patch_ausgeben(tool_context: ToolContext, von: str = "") -> dict[str, Any]:
+    """Gibt alle in diesem Chat vorgemerkten Aenderungen als lesbaren Patch zurueck, bietet ihn als
+    Datei zum Herunterladen an und legt eine Kopie im Eingang der Person ab, die das System pflegt.
+    Den Text unveraendert in einem Codeblock anzeigen, damit der Mensch ihn auch kopieren kann.
 
     Args:
         von: Name oder Rolle der Person, falls genannt
     """
-    ops = _pending(tool_context)
-    if not ops:
-        return {"status": "leer", "meldung": "In diesem Chat wurde noch keine Aenderung vorgemerkt."}
-    return {"status": "ok", "anzahl": len(ops), "patch": patch.render(ops, von)}
+    try:
+        ops = _pending(tool_context)
+        if not ops:
+            return {"status": "leer", "meldung": "In diesem Chat wurde noch keine Aenderung vorgemerkt."}
+        text = patch.render(ops, von)
+        out: dict[str, Any] = {"status": "ok", "anzahl": len(ops), "patch": text}
+        try:  # Kopie im Datenverzeichnis: kommt auch an, wenn niemand kopiert
+            out["im_eingang_abgelegt"] = patch.save_to_inbox(text, von).name
+        except Exception as exc:
+            out["im_eingang_abgelegt"] = f"nicht moeglich: {exc}"
+        try:  # Datei zum Herunterladen in der Chat-Oberflaeche
+            from google.genai import types
+
+            name = f"sqlprofil-patch-{_dt.date.today().isoformat()}.yaml"
+            await tool_context.save_artifact(name, types.Part.from_bytes(data=text.encode("utf-8"), mime_type="text/yaml"))
+            out["download"] = name
+        except Exception as exc:
+            out["download"] = f"nicht moeglich: {exc}"
+        return out
+    except Exception as exc:
+        return {"status": "fehler", "meldung": str(exc)}
 
 
 @_safe
@@ -239,8 +257,9 @@ _MODE_TEXT = (
     """- Du aenderst keine Dateien. Jede Aenderung wird nur vorgemerkt. Sag nie, etwas sei gespeichert,
   sondern "vorgemerkt".
 - Wenn die Person fertig ist oder danach fragt, rufe patch_ausgeben auf und zeige den Patch unveraendert
-  in einem einzigen Codeblock. Schreib einen Satz dazu: Sie soll den Block kopieren und an die Person
-  schicken, die das System pflegt. Erst dort wird er eingespielt.
+  in einem einzigen Codeblock. Schreib dazu, was das Werkzeug gemeldet hat: ob die Datei zum Herunterladen
+  bereitsteht und ob eine Kopie im Eingang abgelegt wurde. Die Person kann die Datei herunterladen oder den
+  Block kopieren und an die Person schicken, die das System pflegt. Erst dort wird der Patch eingespielt.
 - Erinnere bei laengeren Gespraechen einmal daran, dass ohne den Patch nichts erhalten bleibt."""
     if _PATCH_MODE else
     """- Aenderungen landen sofort in der Doku-Datei der Tabelle. Sag in einem Satz, was du eingetragen hast."""

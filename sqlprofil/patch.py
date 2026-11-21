@@ -13,6 +13,7 @@ from typing import Any
 import yaml
 
 from sqlprofil import store
+from sqlprofil.config import get_settings
 from sqlprofil.sqlguard import assert_check_expression
 
 HEADER = "# sqlprofil-patch v1"
@@ -165,3 +166,28 @@ def parse(text: str) -> list[dict[str, Any]]:
     if not isinstance(data, list):
         raise PatchError("Ein Patch ist eine Liste von Aktionen (jede beginnt mit '- aktion: ...').")
     return [validate(op) for op in data]
+
+
+def inbox_dir():
+    return get_settings().data_dir / "patches"
+
+
+def save_to_inbox(text: str, von: str = "") -> "Path":
+    """Legt den Patch als Datei im Eingang ab, damit er auch ohne Kopieren ankommt."""
+    from pathlib import Path  # noqa: F401
+
+    d = inbox_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    who = re.sub(r"[^\w\-]+", "-", von).strip("-").lower()[:30]
+    stem = _dt.datetime.now().strftime("%Y-%m-%d_%H%M%S") + (f"_{who}" if who else "")
+    path, n = d / f"{stem}.yaml", 1
+    while path.exists():
+        n += 1
+        path = d / f"{stem}_{n}.yaml"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def list_inbox() -> list:
+    d = inbox_dir()
+    return sorted(d.glob("*.yaml")) if d.exists() else []

@@ -147,7 +147,10 @@ eigene Datenbank: `SQLPROFIL_DEMO=rental` setzen. Ein Modell braucht der Chat im
 Es gibt zwei Betriebsarten (`SQLPROFIL_CHAT_MODE`):
 
 - **`patch` (Standard).** Der Chat ändert keine Dateien. Er sammelt die Änderungen und gibt sie am Ende
-  als lesbaren Patch aus. Den kopiert die Fachanwenderin und schickt ihn an die Person, die das Repo pflegt.
+  als lesbaren Patch aus. Der kommt auf drei Wegen an:
+  als Codeblock zum Kopieren, als Datei zum Herunterladen in der Chat-Oberfläche und als Kopie im
+  Eingang `daten/patches/` auf dem Rechner, auf dem der Chat läuft. `sqlprofil patch` ohne Datei
+  listet den Eingang auf.
 - **`direkt`.** Änderungen landen sofort in `tables/*.yaml`. Sinnvoll, wenn du selbst chattest.
 
 Ein Patch ist bewusst kein `diff`, sondern eine kurze Liste von Aktionen mit einer Zusammenfassung
